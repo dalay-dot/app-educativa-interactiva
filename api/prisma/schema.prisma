@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Subject {
+  MATHEMATICS
+  LANGUAGE
+  SCIENCE
+  ENGLISH
+  RELIGION
+  PHYSICAL_EDUCATION
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  COUNTING
+  MATCHING
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  name      String
+  age       Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  progress Progress[]
+}
+
+model LearningModule {
+  id          String   @id @default(cuid())
+  subject     Subject  @unique
+  title       String
+  emoji       String
+  description String
+  color       String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons  Lesson[]
+  progress Progress[]
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  moduleId  String
+  title     String
+  content   String
+  audioText String?
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module    LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@unique([moduleId, position])
+}
+
+model Question {
+  id        String       @id @default(cuid())
+  lessonId  String
+  text      String
+  imageKey  String?
+  type      QuestionType @default(MULTIPLE_CHOICE)
+  position  Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  lesson        Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  answerOptions AnswerOption[]
+
+  @@unique([lessonId, position])
+}
+
+model AnswerOption {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  position   Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, position])
+}
+
+model Progress {
+  id               String    @id @default(cuid())
+  studentId        String
+  moduleId         String
+  completedLessons Int       @default(0)
+  totalScore       Int       @default(0)
+  stars            Int       @default(0)
+  lastPlayedAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  module  LearningModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, moduleId])
+}
